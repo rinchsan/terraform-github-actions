@@ -1,0 +1,45 @@
+name: Apply
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  apply:
+    name: Apply
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dir: [
+          resources/shd/ecs,
+        ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v1.2.0
+        with:
+          terraform_version: 0.13.2
+
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
+
+      - name: Apply
+        run: |
+          DIFF=$(git diff --name-only HEAD^ modules ${{ matrix.dir }})
+          if [[ ${DIFF} = *resources* || ${DIFF} = *modules* ]]; then
+            cd ${{ matrix.dir }}
+            terraform init
+            terraform get
+            terraform apply
+          fi
+        shell: bash

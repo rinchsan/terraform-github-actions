@@ -1,23 +1,19 @@
-name: Terraform
+name: Plan
 
 on:
   pull_request:
     branches:
       - master
-  push:
-    branches:
-      - master
 
 jobs:
-  terraform:
-    name: Terraform
+  plan:
+    name: Plan
     runs-on: ubuntu-latest
     strategy:
       matrix:
         dir: [
-          resources/shd/ecs
+          resources/shd/ecs,
         ]
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -59,26 +55,24 @@ jobs:
         working-directory: ${{ matrix.dir }}
 
       - name: Download modules
-        id: get
         if: steps.diff.outputs.diff
         run: terraform get
         working-directory: ${{ matrix.dir }}
 
       - name: Validate
-        id: validate
         if: steps.diff.outputs.diff
         run: terraform validate -no-color
         working-directory: ${{ matrix.dir }}
 
       - name: Plan
-        if: github.event_name == 'pull_request' && steps.diff.outputs.diff
+        if: steps.diff.outputs.diff
         id: plan
         run: terraform plan -no-color
         working-directory: ${{ matrix.dir }}
         continue-on-error: true
 
       - name: Comment
-        if: github.event_name == 'pull_request' && steps.diff.outputs.diff
+        if: steps.diff.outputs.diff
         uses: actions/github-script@v3.0.0
         env:
           PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
@@ -101,8 +95,3 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
-
-      - name: Apply
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-        run: terraform apply -auto-approve
-        working-directory: ${{ matrix.dir }}

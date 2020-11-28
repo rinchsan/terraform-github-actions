@@ -20,12 +20,11 @@ jobs:
 
       - name: Check diff
         id: diff
-        uses: technote-space/get-diff-action@v3.2.0
+        uses: technote-space/get-diff-action@v4.0.2
         with:
-          PREFIX_FILTER: |
-            modules
-            ${{ matrix.dir }}
-          SUFFIX_FILTER: .tf
+          PATTERNS: |
+            modules/**/*.tf
+            ${{ matrix.dir }}/**/*.tf
 
       - name: Configure aws credentials
         if: steps.diff.outputs.diff
@@ -37,7 +36,7 @@ jobs:
 
       - name: Setup terraform
         if: steps.diff.outputs.diff
-        uses: hashicorp/setup-terraform@v1.2.0
+        uses: hashicorp/setup-terraform@v1.2.1
         with:
           terraform_version: 0.13.2
 
